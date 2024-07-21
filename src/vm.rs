@@ -55,10 +55,10 @@ impl Opcode {
     }
 }
 
-#[repr(u8)]
+#[repr(u16)]
 #[derive(Debug)]
 enum Register {
-    R0,
+    R0 = 0,
     R1,
     R2,
     R3,
@@ -90,8 +90,8 @@ impl VM {
         self.registers[Register::COND as usize] = Flags::ZRO as u16;
         loop {
             let instr: u16 = self.read_mem(&self.registers[Register::PC as usize]);
+            println!("Instruction: {}", instr);
             let op: Opcode = Opcode::get(instr >> 12);
-            println!("{:#?}", op);
             break;
         }
     }
