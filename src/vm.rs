@@ -86,34 +86,10 @@ impl VM {
     }
 
     fn read_mem(&mut self, addr: &u16) -> u16 {
-        if *addr == MemMapReg::MR_KBSR as u16 {
-            let mut buf = [0; 1];
-            std::io::stdin().read_exact(&mut buf).unwrap();
-            if buf[0] != 0 {
-                self.memory[MemMapReg::MR_KBSR as usize] = 1 << 15;
-                self.memory[MemMapReg::MR_KBDR as usize] = buf[0] as u16;
-            } else {
-                self.memory[MemMapReg::MR_KBSR as usize] = 0;
-            }
-        }
         self.memory[*addr as usize]
     }
 
-    pub fn load_to_memory(&mut self, program_path: &str) -> Result<(), io::Error> {
-        let mut tmp = Vec::new();
-        let mut file: File = File::open(program_path)?;
-        file.read_to_end(&mut tmp)?;
-        let mut iter = tmp.chunks(2);
-        // We want to fail if value not found
-        let pc = iter.next().unwrap();
-        let mut p = ((pc[0] as u16) << 8 | (pc[1] as u16)) as usize;
-        for e in iter {
-            self.memory[p] = (e[0] as u16) << 8 | e[1] as u16;
-            println!("{} @ {}", self.memory[p], p);
-            p += 1;
-        }
-        Ok(())
-    }
+    pub fn load_to_memory(&mut self, program_path: &str) -> Result<(), io::Error> {}
 }
 
 mod tests {
