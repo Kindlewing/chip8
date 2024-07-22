@@ -1,15 +1,19 @@
-use std::{
-    fs::File,
-    io::{self, BufReader},
-};
-
-use byteorder::{BigEndian, ReadBytesExt};
+use crate::register::Register;
+use std::fs::File;
+use std::io::{self, Read};
 
 #[derive(Debug)]
 enum Flags {
     POS = 1 << 0,
     ZRO = 1 << 1,
     NEG = 1 << 2,
+}
+
+#[derive(Debug)]
+#[allow(non_camel_case_types)]
+pub enum MemMapReg {
+    MR_KBSR = 0xFE00, //Keyboard Status Register. 0xFE00 = 65024.
+    MR_KBDR = 0xFE02, //Keyboard Data Register. 0xFE02 = 65026.
 }
 
 #[derive(Debug)]
@@ -42,33 +46,18 @@ impl Opcode {
             4 => Opcode::JSR,
             5 => Opcode::AND,
             6 => Opcode::LDR,
-            7 => Opcode::RTI,
-            8 => Opcode::NOT,
-            9 => Opcode::LDI,
-            10 => Opcode::STI,
-            11 => Opcode::JMP,
-            12 => Opcode::RES,
-            13 => Opcode::LEA,
-            14 => Opcode::TRAP,
+            7 => Opcode::STR,
+            8 => Opcode::RTI,
+            9 => Opcode::NOT,
+            10 => Opcode::LDI,
+            11 => Opcode::STI,
+            12 => Opcode::JMP,
+            13 => Opcode::RES,
+            14 => Opcode::LEA,
+            15 => Opcode::TRAP,
             _ => panic!("Invalid index {}. Opcode not found", index),
         }
     }
-}
-
-#[repr(u16)]
-#[derive(Debug)]
-enum Register {
-    R0 = 0,
-    R1,
-    R2,
-    R3,
-    R4,
-    R5,
-    R6,
-    R7,
-    PC,
-    COND,
-    COUNT,
 }
 
 pub struct VM {
@@ -96,29 +85,32 @@ impl VM {
         }
     }
 
-    fn read_mem(&self, addr: &u16) -> u16 {
+    fn read_mem(&mut self, addr: &u16) -> u16 {
+        if *addr == MemMapReg::MR_KBSR as u16 {
+            let mut buf = [0; 1];
+            std::io::stdin().read_exact(&mut buf).unwrap();
+            if buf[0] != 0 {
+                self.memory[MemMapReg::MR_KBSR as usize] = 1 << 15;
+                self.memory[MemMapReg::MR_KBDR as usize] = buf[0] as u16;
+            } else {
+                self.memory[MemMapReg::MR_KBSR as usize] = 0;
+            }
+        }
         self.memory[*addr as usize]
     }
 
     pub fn load_to_memory(&mut self, program_path: &str) -> Result<(), io::Error> {
-        let file: File = File::open(program_path)?;
-        let mut reader = BufReader::new(file);
-        let origin_addr = reader.read_u16::<BigEndian>()?;
-        let mut addr = origin_addr as usize;
-        loop {
-            match reader.read_u16::<BigEndian>() {
-                Ok(instr) => {
-                    self.memory[addr] = instr;
-                    addr += 1;
-                }
-                Err(e) => {
-                    if e.kind() == std::io::ErrorKind::UnexpectedEof {
-                        break;
-                    } else {
-                        return Err(e);
-                    }
-                }
-            }
+        let mut tmp = Vec::new();
+        let mut file: File = File::open(program_path)?;
+        file.read_to_end(&mut tmp)?;
+        let mut iter = tmp.chunks(2);
+        // We want to fail if value not found
+        let pc = iter.next().unwrap();
+        let mut p = ((pc[0] as u16) << 8 | (pc[1] as u16)) as usize;
+        for e in iter {
+            self.memory[p] = (e[0] as u16) << 8 | e[1] as u16;
+            println!("{} @ {}", self.memory[p], p);
+            p += 1;
         }
         Ok(())
     }

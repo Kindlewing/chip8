@@ -1,4 +1,2 @@
-mod vm;
-pub mod prelude {
-    pub use crate::vm::*;
-}
+pub mod register;
+pub mod vm;

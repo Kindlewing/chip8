@@ -1,4 +1,4 @@
-use lc3_vm::prelude::VM;
+use lc3_vm::vm::VM;
 use std::io;
 
 fn main() -> Result<(), io::Error> {
