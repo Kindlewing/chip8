@@ -78,18 +78,35 @@ impl VM {
     pub fn run(&mut self) {
         self.registers[Register::COND as usize] = Flags::ZRO as u16;
         loop {
-            let instr: u16 = self.read_mem(&self.registers[Register::PC as usize]);
-            println!("Instruction: {}", instr);
+            let pc = self.registers[Register::PC as usize];
+            println!("memory: {} @ addr: {}", self.read_mem(pc), pc);
+            let instr: u16 = self.read_mem(pc);
             let op: Opcode = Opcode::get(instr >> 12);
             break;
         }
     }
 
-    fn read_mem(&mut self, addr: &u16) -> u16 {
-        self.memory[*addr as usize]
+    fn read_mem(&mut self, addr: u16) -> u16 {
+        self.memory[addr as usize]
     }
 
-    pub fn load_to_memory(&mut self, program_path: &str) -> Result<(), io::Error> {}
+    pub fn load_to_memory(&mut self, program_path: &str) -> Result<(), io::Error> {
+        let mut tmp = Vec::new();
+        let mut file: File = File::open(program_path)?;
+        file.read_to_end(&mut tmp)?;
+        // the first chunk will be the origin
+        let mut iter = tmp.chunks(2);
+        // We want to fail if value not found
+        let pc = iter.next().unwrap();
+        // get origin address
+        let mut p = (pc[0] as u16) << 8 | pc[1] as u16;
+        // store rest of program
+        for e in iter {
+            self.memory[p as usize] = (e[0] as u16) << 8 | e[1] as u16;
+            p += 1;
+        }
+        Ok(())
+    }
 }
 
 mod tests {
