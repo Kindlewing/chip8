@@ -79,7 +79,6 @@ impl VM {
         self.registers[Register::COND as usize] = Flags::ZRO as u16;
         loop {
             let pc = self.registers[Register::PC as usize];
-            println!("memory: {} @ addr: {}", self.read_mem(pc), pc);
             let instr: u16 = self.read_mem(pc);
             let op: Opcode = Opcode::get(instr >> 12);
             break;
