@@ -12,3 +12,10 @@ pub enum Register {
     COND,
     COUNT,
 }
+
+#[derive(Debug)]
+#[allow(non_camel_case_types)]
+pub enum MemMapReg {
+    MR_KBSR = 0xFE00, //Keyboard Status Register. 0xFE00 = 65024.
+    MR_KBDR = 0xFE02, //Keyboard Data Register. 0xFE02 = 65026.
+}
