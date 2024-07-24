@@ -23,13 +23,18 @@ impl VM {
             let pc = self.registers[Register::PC as usize];
             let instr: u16 = self.read_mem(pc);
             let op: Opcode = Opcode::get(instr >> 12);
-
-            match op {};
+            match op {
+                Opcode::BR => {
+                    use Register as R;
+                    let offset = self.sign_extend(instr & 0x1FF, 9);
+                    let flag = (instr >> 9) & 0x7;
+                    if self.registers[R::COND as usize] & flag == 1 {
+                        self.registers[R::PC as usize] += offset;
+                    }
+                }
+                _ => (),
+            }
         }
-    }
-
-    fn read_mem(&mut self, addr: u16) -> u16 {
-        self.memory[addr as usize]
     }
 
     pub fn load_to_memory(&mut self, program_path: &str) -> Result<(), io::Error> {
@@ -48,6 +53,17 @@ impl VM {
             p += 1;
         }
         Ok(())
+    }
+
+    fn read_mem(&mut self, addr: u16) -> u16 {
+        self.memory[addr as usize]
+    }
+
+    fn sign_extend(&self, mut x: u16, bit_count: u16) -> u16 {
+        if (x >> bit_count - 1) & 1 == 1 {
+            x |= 0xFFFF << bit_count;
+        }
+        x
     }
 }
 
