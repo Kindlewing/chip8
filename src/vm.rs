@@ -32,7 +32,20 @@ impl VM {
                         self.registers[R::PC as usize] += offset;
                     }
                 }
-                _ => (),
+                Opcode::ADD => {
+                    let dr = (instr >> 9) & 0x7;
+                    let sr_1 = (instr >> 6) & 0x7;
+                    let imm_fl = (instr >> 5) & 0x1;
+                    if imm_fl == 1 {
+                        let imm_5: u16 = self.sign_extend(instr & 0x1F, 5);
+                        self.registers[dr as usize] = self.registers[sr_1 as usize] + imm_5;
+                    } else {
+                        let r2: u16 = instr & 0x7;
+                        self.registers[dr as usize] =
+                            self.registers[sr_1 as usize] + self.registers[r2 as usize];
+                    }
+                    self.update_flags(dr);
+                }
             }
         }
     }
@@ -53,6 +66,16 @@ impl VM {
             p += 1;
         }
         Ok(())
+    }
+
+    fn update_flags(&mut self, register: u16) {
+        if self.registers[register as usize] == 0 {
+            self.registers[Register::COND as usize] = Flags::ZRO;
+        } else if self.registers[register as usize] >> 15 == 1 {
+            self.registers[Register::COND as usize] = Flags::NEG;
+        } else {
+            self.registers[Register::COND as usize] = Flags::POS;
+        }
     }
 
     fn read_mem(&mut self, addr: u16) -> u16 {
