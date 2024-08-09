@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "lc3_vm"
+name = "chip-8_emulator"
 version = "0.1.0"
