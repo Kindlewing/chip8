@@ -65,6 +65,8 @@ fn main() {
     canvas.clear();
     canvas.present();
     let mut event_pump = sdl_context.event_pump().unwrap();
+
+    let chip8: Chip8 = Chip8::new();
     'running: loop {
         canvas.clear();
         for event in event_pump.poll_iter() {
@@ -80,6 +82,5 @@ fn main() {
         // The rest of the game loop goes here...
 
         canvas.present();
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 }
