@@ -2,6 +2,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::sys::SDL_Point;
+use std::ops::BitAndAssign;
 use std::time::Duration;
 
 enum Register {
@@ -26,7 +27,7 @@ enum Register {
 struct Chip8 {
     memory: [u8; 4096],
     display: [SDL_Point; 64 * 32],
-    pc: u8,
+    pc: u16,
     i: [u16; 1],
     stack: Vec<u16>,
     delay_timer: u8,
@@ -39,13 +40,20 @@ impl Chip8 {
         Chip8 {
             memory: [0; 4096],
             display: [SDL_Point { x: 0, y: 0 }; 64 * 32],
-            pc: 0,
+            pc: 0x200,
             i: [0; 1],
             stack: Vec::new(),
             delay_timer: 0,
             sound_timer: 0,
             reg: [0; 16],
         }
+    }
+
+    pub fn fetch(&mut self) -> u16 {
+        let upper = self.memory[self.pc as usize];
+        let lower = self.memory[(self.pc as usize) + 1];
+        self.pc += 2;
+        (upper as u16) << 8 | lower as u16
     }
 }
 
@@ -66,7 +74,7 @@ fn main() {
     canvas.present();
     let mut event_pump = sdl_context.event_pump().unwrap();
 
-    let chip8: Chip8 = Chip8::new();
+    let mut chip8: Chip8 = Chip8::new();
     'running: loop {
         canvas.clear();
         for event in event_pump.poll_iter() {
@@ -79,7 +87,21 @@ fn main() {
                 _ => {}
             }
         }
-        // The rest of the game loop goes here...
+        let opcode = chip8.fetch();
+        let instr = (opcode & 0xF000) >> 12 as u8;
+        let x = (opcode & 0x0F00) >> 8 as u8;
+        let y = (opcode & 0x00F0) >> 4 as u8;
+        let n = (opcode & 0x000F) as u8;
+
+        let nn = (opcode & 0x00FF) as u8;
+        let nnn = (opcode & 0x0FFF) as usize;
+
+        match (instr, x, y, n) {
+            (0x00, 0x00, 0x0E, 0x00) => {
+                println!("clear screen");
+            }
+            (_, _, _, _) => println!("Unrecognized opcode"),
+        }
 
         canvas.present();
     }
