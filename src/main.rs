@@ -97,8 +97,34 @@ fn main() {
         let nnn = (opcode & 0x0FFF) as usize;
 
         match (instr, x, y, n) {
+            // clear screen
             (0x00, 0x00, 0x0E, 0x00) => {
                 println!("clear screen");
+            }
+            // jump
+            (0x01, _, _, _) => {
+                chip8.pc = nnn as u16;
+            }
+
+            // set register VX
+            (0x06, _, _, _) => {
+                chip8.reg[x as usize] = nn;
+            }
+            // add
+            (0x07, _, _, _) => {
+                chip8.reg[x as usize] += nn;
+            }
+
+            // set I
+            (0x0A, _, _, _) => {
+                chip8.i[0] = nnn as u16;
+            }
+
+            // display
+            (0x0D, _, _, _) => {
+                let x_pos = chip8.reg[x as usize] % 64;
+                let y_pos = chip8.reg[y as usize] % 32;
+                chip8.reg[Register::VF] = 0;
             }
             (_, _, _, _) => println!("Unrecognized opcode"),
         }
