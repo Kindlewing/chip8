@@ -1,9 +1,9 @@
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
 use sdl2::sys::SDL_Point;
-use std::ops::BitAndAssign;
-use std::time::Duration;
+
+const CHIP8_WIDTH: u32 = 64;
+const CHIP8_HEIGHT: u32 = 32;
 
 enum Register {
 	V0,
@@ -26,9 +26,9 @@ enum Register {
 
 struct Chip8 {
 	memory: [u8; 4096],
-	display: [SDL_Point; 64 * 32],
+	display: [u8; 64 * 32],
 	pc: u16,
-	i: [u16; 1],
+	i: u16,
 	stack: Vec<u16>,
 	delay_timer: u8,
 	sound_timer: u8,
@@ -39,9 +39,9 @@ impl Chip8 {
 	pub fn new() -> Self {
 		Chip8 {
 			memory: [0; 4096],
-			display: [SDL_Point { x: 0, y: 0 }; 64 * 32],
+			display: [0; CHIP8_WIDTH as usize * CHIP8_HEIGHT as usize],
 			pc: 0x200,
-			i: [0; 1],
+			i: 0,
 			stack: Vec::new(),
 			delay_timer: 0,
 			sound_timer: 0,
@@ -63,7 +63,7 @@ fn main() {
 	let scale: u32 = 10;
 
 	let window = video_subsystem
-		.window("Chip8", 64 * scale, 32 * scale)
+		.window("Chip8", CHIP8_WIDTH * scale, CHIP8_HEIGHT * scale)
 		.position_centered()
 		.build()
 		.unwrap();
@@ -117,17 +117,31 @@ fn main() {
 
 			// set I
 			(0x0A, _, _, _) => {
-				chip8.i[0] = nnn as u16;
+				chip8.i = nnn as u16;
 			}
 
 			// display
 			(0x0D, _, _, _) => {
-				let x_pos = chip8.reg[x as usize] as u16;
-				let y_pos = chip8.reg[y as usize] as u16;
-				chip8.reg[Register::VF as usize] = 0;
-				for byte in 0..n {
-					let address = chip8.i[0] + byte as u16;
-					for bit in 0..8 {}
+				let x_pos = chip8.reg[x as usize] as u16 % 64;
+				let y_pos = chip8.reg[y as usize] as u16 % 32;
+				chip8.reg[0xF] = 0;
+
+				for row in 0..n {
+					let sprite = chip8.memory[chip8.i as usize + row as usize];
+					for bit in 0..8 {
+						if (x_pos as u32 + bit as u32) < CHIP8_HEIGHT
+							&& (y_pos as u32 + row as u32) < CHIP8_WIDTH
+						{
+							if bit
+								& chip8.display[x_pos as usize
+									+ y_pos as usize * CHIP8_WIDTH as usize]
+								== 1
+							{
+								chip8.display[x_pos as usize
+									+ y_pos as usize * CHIP8_WIDTH as usize] = 0;
+							}
+						}
+					}
 				}
 			}
 			(_, _, _, _) => println!("Unrecognized opcode"),
