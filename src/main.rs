@@ -1,6 +1,6 @@
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2::sys::SDL_Point;
+use sdl2::sys::{SDL_Point, SDL_RenderDrawPoint, SDL_Renderer};
 
 const CHIP8_WIDTH: u32 = 64;
 const CHIP8_HEIGHT: u32 = 32;
@@ -68,7 +68,7 @@ fn main() {
 		.build()
 		.unwrap();
 
-	let mut canvas = window.into_canvas().build().unwrap();
+	let mut canvas = window.into_ccanvas().build().unwrap();
 
 	canvas.clear();
 	canvas.present();
@@ -122,8 +122,8 @@ fn main() {
 
 			// display
 			(0x0D, _, _, _) => {
-				let x_pos = chip8.reg[x as usize] as u16 % 64;
-				let y_pos = chip8.reg[y as usize] as u16 % 32;
+				let mut x_pos = chip8.reg[x as usize] as u16 % 64;
+				let mut y_pos = chip8.reg[y as usize] as u16 % 32;
 				chip8.reg[0xF] = 0;
 
 				for row in 0..n {
@@ -140,8 +140,17 @@ fn main() {
 								chip8.display[x_pos as usize
 									+ y_pos as usize * CHIP8_WIDTH as usize] = 0;
 							}
+							if bit == 1
+								&& chip8.display[x_pos as usize
+									+ y_pos as usize * CHIP8_WIDTH as usize]
+									== 0
+							{
+								SDL_RenderDrawPoint(renderer, x, y)
+							}
 						}
 					}
+					x_pos += 1;
+					y_pos += 1;
 				}
 			}
 			(_, _, _, _) => println!("Unrecognized opcode"),
