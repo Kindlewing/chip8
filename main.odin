@@ -16,10 +16,11 @@ SPRITE_Y_MIN :: 1
 SPRITE_Y_MAX :: 15
 
 
-chip8 :: struct {
+Chip8 :: struct {
 	mem:     [MEMORY_SIZE]byte,
 	v_reg:   [16]u8,
 	i_reg:   u16,
+	pc:      int,
 	delay_t: u8,
 	sound_t: u8,
 }
@@ -55,5 +56,32 @@ main :: proc() {
 			}
 			mem.tracking_allocator_destroy(&track)
 		}
+	}
+
+	chip8: Chip8
+	fd, fd_err := os.open("data/rom/ibm_logo.ch8", os.O_RDONLY)
+	if fd_err != nil {
+		fmt.eprintf("Error: %v\n", fd_err)
+		return
+	}
+
+	rom, ok := os.read_entire_file_from_handle(fd)
+	if !ok {
+		fmt.eprintf("Read error")
+		return
+	}
+
+	fmt.printf("%v\n", rom)
+
+	copy_slice(chip8.mem[PROGRAM_START:], rom)
+
+	for {
+		pc := chip8.pc
+		ins_low: u8 = chip8.mem[pc]
+		ins_hi: u8 = chip8.mem[pc + 1]
+		chip8.pc += 2
+
+		instr: u16 = (u16(ins_low) << 8) | u16(ins_hi)
+		fmt.printf("instr: %u\n", instr)
 	}
 }
