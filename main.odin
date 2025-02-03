@@ -17,7 +17,6 @@ TARGET_FPS :: 60
 INSTR_PER_SEC :: 600
 INSTR_PER_FRAME :: INSTR_PER_SEC / TARGET_FPS
 
-
 Chip8 :: struct {
 	mem:     [MEMORY_SIZE]byte,
 	v_reg:   [16]u8,
@@ -25,6 +24,7 @@ Chip8 :: struct {
 	pc:      u16,
 	delay_t: u8,
 	sound_t: u8,
+	screen:  [DSP_W * DSP_H]u8,
 }
 
 main :: proc() {
@@ -105,7 +105,7 @@ main :: proc() {
 				}
 			case 0x1:
 				// JMP
-				chip8.pc = nnn - 2
+				chip8.pc = nnn
 				fmt.printf("(1NNN) JMP\n")
 			case 0x6:
 				// set reg
@@ -118,7 +118,42 @@ main :: proc() {
 				chip8.i_reg = nnn
 			case 0xD:
 				fmt.printf("(DXYN) DISPLAY\n")
+				vx := chip8.v_reg[x] % DSP_W
+				vy := chip8.v_reg[y] % DSP_H
+				chip8.v_reg[0xF] = 0
 
+				for y := 0; y < int(n); y += 1 {
+					b := chip8.mem[int(chip8.i_reg) + y]
+					yy := (int(vy) + y) % DSP_H
+
+					for x := 0; x < 8; x += 1 {
+						bit := u8(b & 0b1000_0000 > 0 ? 1 : 0)
+						b <<= 1
+
+						xx := (int(vx) + x) % DSP_W
+						screen_bit := chip8.screen[xx + yy * DSP_W]
+
+						if screen_bit == 1 && bit == 1 do chip8.v_reg[0xf] = 1
+
+						chip8.screen[xx + yy * DSP_W] =
+							screen_bit ~ bit > 0 ? 1 : 0
+					}
+				}
+				fmt.printf("display: %v\n", chip8.screen)
+
+			}
+		}
+		for x in 0 ..< DSP_W {
+			for y in 0 ..< DSP_H {
+				if cast(u8)chip8.screen[x + y * DSP_W] > 0 {
+					rl.DrawRectangle(
+						cast(i32)x * PX_SIZE,
+						cast(i32)y * PX_SIZE,
+						PX_SIZE,
+						PX_SIZE,
+						0,
+					)
+				}
 			}
 		}
 		rl.EndDrawing()
