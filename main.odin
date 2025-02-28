@@ -129,7 +129,6 @@ main :: proc() {
 					for x := 0; x < 8; x += 1 {
 						bit := u8(b & 0b1000_0000 > 0 ? 1 : 0)
 						b <<= 1
-
 						xx := (int(vx) + x) % DSP_W
 						screen_bit := chip8.screen[xx + yy * DSP_W]
 
