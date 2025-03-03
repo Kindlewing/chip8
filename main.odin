@@ -61,7 +61,7 @@ main :: proc() {
 	}
 
 	chip8: Chip8
-	fd, fd_err := os.open("data/rom/ibm_logo.ch8", os.O_RDONLY)
+	fd, fd_err := os.open("./data/rom/1-chip8-logo.ch8", os.O_RDONLY)
 	if fd_err != nil {
 		fmt.eprintf("Error: %v\n", fd_err)
 		return
@@ -118,28 +118,6 @@ main :: proc() {
 				chip8.i_reg = nnn
 			case 0xD:
 				fmt.printf("(DXYN) DISPLAY\n")
-				vx := chip8.v_reg[x] % DSP_W
-				vy := chip8.v_reg[y] % DSP_H
-				chip8.v_reg[0xF] = 0
-
-				for y := 0; y < int(n); y += 1 {
-					b := chip8.mem[int(chip8.i_reg) + y]
-					yy := (int(vy) + y) % DSP_H
-
-					for x := 0; x < 8; x += 1 {
-						bit := u8(b & 0b1000_0000 > 0 ? 1 : 0)
-						b <<= 1
-						xx := (int(vx) + x) % DSP_W
-						screen_bit := chip8.screen[xx + yy * DSP_W]
-
-						if screen_bit == 1 && bit == 1 do chip8.v_reg[0xf] = 1
-
-						chip8.screen[xx + yy * DSP_W] =
-							screen_bit ~ bit > 0 ? 1 : 0
-					}
-				}
-				fmt.printf("display: %v\n", chip8.screen)
-
 			}
 		}
 		for x in 0 ..< DSP_W {
